@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: CI/CD SAM Deployment for Social Sentiment Agent
+
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: SNS Topic ARN for Risk Notifications
+
+Resources:
+  SentimentAgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SocialSentimentAgent
+      CodeUri: src/
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      MemorySize: 128
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref SnsTopicArn
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - sns:Publish
+              Resource: !Ref SnsTopicArn
+
+  DailyScheduledTrigger:
+    Type: AWS::Serverless::Rule
+    Properties:
+      Schedule: cron(0 5 * * ? *) # Runs daily at 07:00 SAST (05:00 UTC)
+      Target:
+        Id: SentimentAgentTarget
+        Arn: !GetAtt SentimentAgentFunction.Arn
+
+  PermissionForEventsToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SentimentAgentFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt DailyScheduledTrigger.Arn
