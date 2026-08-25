@@ -14,20 +14,21 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
       - name: Set up AWS SAM CLI
-        uses: aws-actions/setup-sam@v2
+        uses: aws-actions/setup-sam@v3
 
       - name: Configure AWS Credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActionsSentimentAgentDeploy
           aws-region: us-east-1
 
       - name: SAM Build
